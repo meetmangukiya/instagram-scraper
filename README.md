@@ -1,4 +1,4 @@
-# Instagram-Scrapper
+# Instagram-Scraper
 
 ## Installation
 
