@@ -26,6 +26,7 @@ def scrape_instagram_tag(tag: str, total_count: int=50):
     session = HTMLSession()
     req = session.get(url)
 
+    imgs = set()
     count = 0
     page = 0
 
@@ -41,6 +42,9 @@ def scrape_instagram_tag(tag: str, total_count: int=50):
             except:
                 pass
             else:
+                if url in imgs:
+                    continue
+                imgs.add(url)
                 hashtags = set(REGEXES['hashtag'].findall(caption))
                 mentions = set(REGEXES['username'].findall(caption))
                 count += 1
