@@ -18,7 +18,7 @@ REGEXES = {
 }
 
 
-def scrape_instagram_tag(tag: str, total_count: int=50):
+def scrape_instagram_tag(tag: str, total_count: int=50, existing: set=None):
     """
     Scrape and yield recently tagged instagram photos.
     """
@@ -26,7 +26,7 @@ def scrape_instagram_tag(tag: str, total_count: int=50):
     session = HTMLSession()
     req = session.get(url)
 
-    imgs = set()
+    imgs = set(existing)
     count = 0
     page = 0
 
@@ -51,7 +51,7 @@ def scrape_instagram_tag(tag: str, total_count: int=50):
                 yield url, caption, hashtags, mentions
 
 
-def scrape_instagram(tags: List[str], total_count: int=50):
+def scrape_instagram(tags: List[str], total_count: int=50, existing: set=None):
     """
     :param tags:
         List of tags that need to be scraped.
@@ -61,13 +61,13 @@ def scrape_instagram(tags: List[str], total_count: int=50):
     for tag in tags:
         yield from scrape_instagram_tag(tag, total_count)
 
-def main(tags, total_count):
-    def _single_tag_processing(tag, total_count):
+def main(tags, total_count, should_continue):
+    def _single_tag_processing(tag, total_count, existing_links, start):
         os.makedirs(f'data/{tag}', exist_ok=True)
-        with open(f'data/{tag}/data.csv', 'w', newline='') as csvfile:
+        with open(f'data/{tag}/data.csv', 'a' if existing_links else 'w', newline='') as csvfile:
             writer = csv.writer(csvfile, delimiter=',')
             for count, (url, caption, hashtags, mentions) in enumerate(scrape_instagram_tag(
-                tag, total_count)):
+                tag, total_count, existing_links), start):
 
                 try:
                     req = requests.get(url)
@@ -86,7 +86,15 @@ def main(tags, total_count):
                     print(f'[{tag}] downloaded {url} as {count}.jpg in data/{tag}')
 
     for tag in tags:
-        _single_tag_processing(tag, total_count)
+        existing_links = set()
+        start = 0
+        if os.path.exists(f'data/{tag}/data.csv') and should_continue:
+            with open(f'data/{tag}/data.csv', newline='') as csvfile:
+                reader = csv.reader(csvfile)
+                for i, row in enumerate(reader):
+                    existing_links.add(row[1])
+                start = i + 1
+        _single_tag_processing(tag, total_count, existing_links, start)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -95,7 +103,11 @@ if __name__ == '__main__':
     parser.add_argument('--count', '-c', type=int, default=50,
                         help='Total number of images to scrape for each given '
                              'tag.')
+    parser.add_argument('--continue', '-C',
+                        default=False, action='store_true', dest='cont',
+                        help='See existing data, and do not parse those again, '
+                             'and append to the data file, instead of a rewrite')
     args = parser.parse_args()
     assert args.tags, "Enter tags to scrape! Use --tags option, see help."
     assert args.count, "Enter total number of images to scrape using --count option, see help."
-    main(args.tags, args.count)
+    main(args.tags, args.count, args.cont)
