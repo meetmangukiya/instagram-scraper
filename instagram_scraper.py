@@ -79,7 +79,7 @@ def main(tags, total_count, should_continue):
                     writer.writerow([
                         f'{count}.jpg',
                         url,
-                        caption,
+                        caption.replace('\n', '\\n'),
                         ', '.join(hashtags),
                         ', '.join(mentions)
                     ])
