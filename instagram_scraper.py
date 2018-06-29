@@ -18,6 +18,9 @@ def scrape_instagram_tag(tag: str, total_count: int=50, existing: set=None):
     """
     Scrape and yield recently tagged instagram photos.
     """
+    if existing is None:
+        existing = set()
+
     url = f'https://www.instagram.com/explore/tags/{tag}'
     session = HTMLSession()
     req = session.get(url)
@@ -53,9 +56,14 @@ def scrape_instagram(tags: List[str], total_count: int=50, existing: set=None):
         List of tags that need to be scraped.
     :param total_count:
         Total number of images to be scraped.
+    :param existing:
+        Set of URLs to escape.
     """
+    if existing is None:
+        existing = set()
+
     for tag in tags:
-        yield from scrape_instagram_tag(tag, total_count)
+        yield from scrape_instagram_tag(tag, total_count, existing)
 
 
 def main(tags, total_count, should_continue):
